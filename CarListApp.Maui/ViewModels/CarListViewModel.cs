@@ -9,10 +9,24 @@ namespace CarListApp.Maui.ViewModels
 {
     public partial class CarListViewModel : BaseViewModel
     {
+        private const string ADD_CAR_TEXT = "Add Car";
+        private const string UPDATE_CAR_TEXT = "Update Car";
+
+        private const string CANCEL_TEXT = "Cancel";
+        private const string CLEAR_FORM_TEXT = "Clear Form";
+
+        private int updatingCarId = 0;
+
         public ObservableCollection<Car> Cars { get; private set; } = new ObservableCollection<Car>();
 
         [ObservableProperty]
         bool isRefreshing;
+
+        [ObservableProperty]
+        string addOrEditText;
+        
+        [ObservableProperty]
+        string clearOrCancelText;
 
         [ObservableProperty]
         string make;
@@ -26,7 +40,24 @@ namespace CarListApp.Maui.ViewModels
         public CarListViewModel()
         {
             Title = "Car List";
+
+            ResetButtonsText();
             GetCarListAsync().Wait();
+        }
+
+        private void ResetButtonsText()
+        {
+            AddOrEditText = ADD_CAR_TEXT;
+            ClearOrCancelText = CLEAR_FORM_TEXT;
+        }
+
+        [RelayCommand]
+        void ClearForm()
+        {
+            updatingCarId = 0;
+            Make = Model = Vin = string.Empty;
+
+            ResetButtonsText();
         }
 
         [RelayCommand]
@@ -69,7 +100,7 @@ namespace CarListApp.Maui.ViewModels
         }
 
         [RelayCommand]
-        async Task AddCarAsync()
+        async Task SaveCarAsync()
         {
             if (string.IsNullOrEmpty(Model) || string.IsNullOrEmpty(Make) || string.IsNullOrEmpty(Vin))
             {
@@ -84,9 +115,33 @@ namespace CarListApp.Maui.ViewModels
                 Vin = Vin
             };
 
-            App.CarService.AddCar(car);
+            if (updatingCarId != 0)
+            {
+                car.Id = updatingCarId;
+                App.CarService.UpdateCar(car);
+            }
+            else
+            {
+                App.CarService.AddCar(car);
+            }
+
             await Shell.Current.DisplayAlert("Info", App.CarService.StatusMessage, "Ok");
             await GetCarListAsync();
+            ClearForm();
+        }
+
+        [RelayCommand]
+        void SetEditMode(int id)
+        {
+            var car = App.CarService.GetCar(id);
+
+            Make = car.Make;
+            Model = car.Model;
+            Vin = car.Vin;
+
+            updatingCarId = id;
+            AddOrEditText = UPDATE_CAR_TEXT;
+            ClearOrCancelText = CANCEL_TEXT;
         }
 
         [RelayCommand]

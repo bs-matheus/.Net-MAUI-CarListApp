@@ -72,6 +72,25 @@ namespace CarListApp.Maui.Services
             }
         }
 
+        public void UpdateCar(Car updatedCar)
+        {
+
+            try
+            {
+                Init();
+
+                if (updatedCar == null)
+                    throw new Exception("Invalid car record.");
+
+                result = _connection.Update(updatedCar);
+                StatusMessage = result == 0 ? "Update Failed." : "Update Successful.";
+            }
+            catch (Exception)
+            {
+                StatusMessage = "Failed to update data.";
+            }
+        }
+
         public int DeleteCar(int id)
         {
             try
