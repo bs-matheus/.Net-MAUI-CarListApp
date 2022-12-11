@@ -38,6 +38,46 @@ namespace CarListApp.Api
 
             app.UseAuthorization();
 
+            app.MapGet("/cars", async (CarListDbContext db) => await db.Cars.ToListAsync());
+
+            app.MapGet("/cars/{id}", async (int id, CarListDbContext db) =>
+            {
+                return await db.Cars.FindAsync(id) is Car car ? Results.Ok(car) : Results.NotFound();
+            });
+
+            app.MapPost("/cars", async (Car car, CarListDbContext db) =>
+            {
+                await db.Cars.AddAsync(car);
+                await db.SaveChangesAsync();
+
+                return Results.Created($"/cars/{car.Id}", car);
+            });
+            
+            app.MapPut("/cars/{id}", async (int id, Car car, CarListDbContext db) =>
+            {
+                var record = await db.Cars.FindAsync(id);
+                if (record is null) return Results.NotFound();
+
+                record.Make = car.Make;
+                record.Model = car.Model;
+                record.Vin = car.Vin;
+
+                await db.SaveChangesAsync();
+
+                return Results.NoContent();
+            });
+            
+            app.MapDelete("/cars/{id}", async (int id, CarListDbContext db) =>
+            {
+                var record = await db.Cars.FindAsync(id);
+                if (record is null) return Results.NotFound();
+
+                db.Remove(record);
+                await db.SaveChangesAsync();
+
+                return Results.NoContent();
+            });
+
             app.Run();
         }
     }
